@@ -12,6 +12,7 @@ using System.Text;
 using DG.Tweening;
 using System.IO;
 
+//Add some comments;
 public class NetConnecter : MonoBehaviour {
     #region vars
     public string adress_, port_;
@@ -253,7 +254,7 @@ public class NetConnecter : MonoBehaviour {
         {
             var newMessage = JsonConvert.DeserializeObject<NetData>(str);
             string json;
-            Debug.Log(str);
+            //Debug.Log(str);
             //packetID = newMessage.ID;
             ShowLockScreen(false);
 
@@ -432,8 +433,8 @@ public class NetConnecter : MonoBehaviour {
 
                                 cardPlaced = false;
                                 CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), false);
-                                //json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID });
-                                //SendResponce(json);
+                                json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID });
+                                SendResponce(json);
                                 break;
 
                             case 1:
@@ -483,7 +484,6 @@ public class NetConnecter : MonoBehaviour {
                 return;
 
             ShowLockScreen(false);
-            Debug.Log("SERVER : "  + str);
 
             switch (newMessage.CMD)
             {
@@ -688,87 +688,87 @@ public class NetConnecter : MonoBehaviour {
 
                     //CARD RFID;
                     //----------------------------------;
-                case 132:
-                    int bet_data = GameManager.instance.CalcCurBet();
+                    case 132:
+                        int bet_data = GameManager.instance.CalcCurBet();
 
-                    Debug.Log("Card placed");
+                        Debug.Log("Card placed");
 
-                    if ((newMessage.STATUS & 0x1) != 0x00)
-                    {
-                        if (bet_data == 0)
+                        if ((newMessage.STATUS & 0x1) != 0x00)
+                        {
+                            if (bet_data == 0)
+                            {
+                                switch (newMessage.TRANS)
+                                {
+                                    case 0:
+                                        Debug.Log("Transaction complete");
+                                        GameManager.instance.p_balance = newMessage.CREDIT;
+                                        GameManager.instance.UpdateLabels();
+                                        GameManager.instance.GlobalUnlockEvent();
+                                        json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
+                                        SendResponce(json);
+                                        break;
+
+                                    case 1:
+                                        Debug.Log("Transaction in progress");
+                                        GameManager.instance.GlobalLockEvent("Cashless transfer - please wait...", true);
+                                        json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
+                                        SendResponce(json);
+                                        break;
+
+                                    case 255:
+                                        Debug.Log("Transaction ERROR");
+                                        GameManager.instance.GlobalUnlockEvent();
+                                        GameManager.instance.popupWindow.ShowPopup("<color=red>TRANSACTION ERROR</color>");
+                                        json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
+                                        SendResponce(json);
+                                        break;
+                                }
+
+                                if (!cardPlaced)
+                                {
+                                    CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), true);
+                                    cardPlaced = true;
+                                }
+                            }
+                            else
+                            {
+                                Debug.Log("Command broken, reason - detected active bets");
+                            }
+                        }
+                        else
                         {
                             switch (newMessage.TRANS)
                             {
                                 case 0:
-                                    Debug.Log("Transaction complete");
                                     GameManager.instance.p_balance = newMessage.CREDIT;
                                     GameManager.instance.UpdateLabels();
                                     GameManager.instance.GlobalUnlockEvent();
+                                    Debug.Log(newMessage.CREDIT);
+
+                                    cardPlaced = false;
+                                    CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), false);
                                     json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
                                     SendResponce(json);
                                     break;
 
                                 case 1:
-                                    Debug.Log("Transaction in progress");
                                     GameManager.instance.GlobalLockEvent("Cashless transfer - please wait...", true);
                                     json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
                                     SendResponce(json);
                                     break;
 
                                 case 255:
-                                    Debug.Log("Transaction ERROR");
                                     GameManager.instance.GlobalUnlockEvent();
                                     GameManager.instance.popupWindow.ShowPopup("<color=red>TRANSACTION ERROR</color>");
+
+                                    cardPlaced = false;
+                                    CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), false);
                                     json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
                                     SendResponce(json);
                                     break;
                             }
-
-                            if (!cardPlaced)
-                            {
-                                CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), true);
-                                cardPlaced = true;
-                            }
                         }
-                        else
-                        {
-                            Debug.Log("Command broken, reason - detected active bets");
-                        }
-                    }
-                    else
-                    {
-                        switch (newMessage.TRANS)
-                        {
-                            case 0:
-                                GameManager.instance.p_balance = newMessage.CREDIT;
-                                GameManager.instance.UpdateLabels();
-                                GameManager.instance.GlobalUnlockEvent();
-                                Debug.Log(newMessage.CREDIT);
-
-                                cardPlaced = false;
-                                CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), false);
-                                json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
-                                SendResponce(json);
-                                break;
-
-                            case 1:
-                                GameManager.instance.GlobalLockEvent("Cashless transfer - please wait...", true);
-                                json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
-                                SendResponce(json);
-                                break;
-
-                            case 255:
-                                GameManager.instance.GlobalUnlockEvent();
-                                GameManager.instance.popupWindow.ShowPopup("<color=red>TRANSACTION ERROR</color>");
-
-                                cardPlaced = false;
-                                CardInfo.instance.ShowCardInfo(0, Int64.Parse(newMessage.RFID), false);
-                                json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
-                                SendResponce(json);
-                                break;
-                        }
-                    }
-                    break;
+                        break;
 
                 //LOCK SEAT;
                 //----------------------------------;
