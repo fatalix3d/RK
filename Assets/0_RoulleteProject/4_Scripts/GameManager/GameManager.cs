@@ -86,12 +86,12 @@ public class GameManager : MonoBehaviour {
     public int nSetId = 99;
 
     //Limit to bets;
-    public float max_field_bet = 25; //SET 5
-    public float max_cell_bet = 10;  //SET 6
-    public float min_cell_bet = 10;  //SET 7
-    public float min_out_bet = 10;  //SET 8
+    public int max_field_bet = 25; //SET 5
+    public int max_cell_bet = 10;  //SET 6
+    public int min_cell_bet = 10;  //SET 7
+    public int min_out_bet = 10;  //SET 8
 
-    public void SetDataValues(float set5, float set6, float set7, float set8)
+    public void SetDataValues(int set5, int set6, int set7, int set8)
     {
         max_field_bet = set5;
         max_cell_bet = set6;
@@ -467,8 +467,8 @@ public class GameManager : MonoBehaviour {
         int ttb = 0;
 
         //Min max values;
-        float min_val = 0;
-        float max_val = 0;
+        int min_val = 0;
+        int max_val = 0;
 
         //Set min/max values based on cell type;
         //-------------------------------------------;
@@ -517,7 +517,41 @@ public class GameManager : MonoBehaviour {
                 }
                 else
                 {
-                    popupWindow.ShowPopup("<size=50>Недопустимая ставка.</size>");
+                    //popupWindow.ShowPopup("<size=50>Недопустимая ставка.</size>");
+                    ttb = CalcCurBet();
+
+                    //Bet is < min value;
+                    if (t_max_cell < min_val)
+                    {
+                        if ((ttb + min_val) <= max_field_bet)
+                        {
+                            //Debug.Log("bet is updated");
+                            _cell.cell_bet_value += min_val;
+                            SetBasicChip(_cell, min_val);
+                            p_credit -= min_val;
+                            p_balance -= min_val * p_denomination;
+                            UpdateLabels();
+                            SaveHistory(min_val);
+                        }
+                    }
+                    else
+                    {
+                        //Bet is > max value;
+                        if (t_max_cell > max_val)
+                        {
+                            int x_val = max_val - _cell.cell_bet_value;
+
+                            if ((ttb + x_val) <= max_field_bet)
+                            {
+                                _cell.cell_bet_value += x_val;
+                                SetBasicChip(_cell, x_val);
+                                p_credit -= x_val;
+                                p_balance -= x_val * p_denomination;
+                                UpdateLabels();
+                                SaveHistory(x_val);
+                            }
+                        }
+                    }
                 }
             }
             else
@@ -543,11 +577,26 @@ public class GameManager : MonoBehaviour {
                 Cell tCell = t_data.cells_list[indexes[i]];
                 t_max_cell = tCell.cell_bet_value + _value;
 
-                if (t_max_cell <= max_cell_bet)
+                if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
                 {
                     t_all_sum += _value;
                 }
+                else
+                {
+                    if (t_max_cell <= min_val)
+                    {
+                        t_all_sum += min_val;
+                    }
+                    else
+                    if (t_max_cell > max_val)
+                    {
+                        int x_val = max_val - tCell.cell_bet_value;
+                        t_all_sum += x_val;
+                    }
+                }
             }
+
+            //Debug.Log("SET total sum : " + t_all_sum);
 
             ttb = CalcCurBet();
 
@@ -560,12 +609,32 @@ public class GameManager : MonoBehaviour {
                         Cell tCell = t_data.cells_list[indexes[i]];
                         t_max_cell = tCell.cell_bet_value + _value;
 
-                        if (t_max_cell <= max_cell_bet)
+                        if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
                         {
                             tCell.cell_bet_value += _value;
                             SetBasicChip(tCell, _value);
                             p_credit -= _value;
                             p_balance -= _value * p_denomination;
+                        }
+                        else
+                        {
+                            if (t_max_cell <= min_val)
+                            {
+                                tCell.cell_bet_value += min_val;
+                                SetBasicChip(tCell, min_val);
+                                p_credit -= min_val;
+                                p_balance -= min_val * p_denomination;
+                            }
+                            else
+                            if (t_max_cell > max_val)
+                            {
+                                int x_val = max_val - tCell.cell_bet_value;
+
+                                tCell.cell_bet_value += x_val;
+                                SetBasicChip(tCell, x_val);
+                                p_credit -= x_val;
+                                p_balance -= x_val * p_denomination;
+                            }
                         }
                     }
 
@@ -711,11 +780,26 @@ public class GameManager : MonoBehaviour {
             n_id = neigbors[n_map_id].n_index;
             t_max_cell = t_data.cells_list[n_id].cell_bet_value + cur_bet_value;
 
-            if (t_max_cell <= max_cell_bet)
+            if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
             {
                 t_all_sum += cur_bet_value;
             }
+            else
+            {
+                if (t_max_cell <= min_cell_bet)
+                {
+                    t_all_sum += min_cell_bet;
+                }
+                else
+                if (t_max_cell > max_cell_bet)
+                {
+                    int x_val = max_cell_bet - t_data.cells_list[n_id].cell_bet_value;
+                    t_all_sum += x_val;
+                }
+            }
         }
+
+        Debug.Log("Neighbors set value is : " + t_all_sum);
         ttb = CalcCurBet();
 
         //Делаем ставку на закрываемые номера;
@@ -744,13 +828,31 @@ public class GameManager : MonoBehaviour {
                     //Get current cell bet value;
                     t_max_cell = t_data.cells_list[n_id].cell_bet_value + cur_bet_value;
 
-                    if (t_max_cell <= max_cell_bet)
+                    if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
                     {
                         //Root => create bet to this cell;
                         t_data.cells_list[n_id].cell_bet_value += cur_bet_value;
-
                         //Root => save n_value;
                         neigbors[n_map_id].n_value += cur_bet_value;
+                    }
+                    else
+                    {
+                        if (t_max_cell <= min_cell_bet)
+                        {
+                            //Root => create bet to this cell;
+                            t_data.cells_list[n_id].cell_bet_value += min_cell_bet;
+                            //Root => save n_value;
+                            neigbors[n_map_id].n_value += min_cell_bet;
+                        }
+                        else
+                        if (t_max_cell > max_cell_bet)
+                        {
+                            int x_val = max_cell_bet - t_data.cells_list[n_id].cell_bet_value;
+                            //Root => create bet to this cell;
+                            t_data.cells_list[n_id].cell_bet_value += x_val;
+                            //Root => save n_value;
+                            neigbors[n_map_id].n_value += x_val;
+                        }
                     }
                 }
 
@@ -1087,6 +1189,35 @@ public class GameManager : MonoBehaviour {
 
     //Выбор соседей <neighbors select>;
     //======================================;
+
+    public int CalcNBet(Cell t_cell)
+    {
+        int calc_summ = 0;
+        int t_max_cell = t_cell.cell_bet_value + cur_bet_value;
+
+        if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
+        {
+            calc_summ += cur_bet_value;
+        }
+        else
+        {
+            {
+                if (t_max_cell <= min_cell_bet)
+                {
+                    calc_summ += min_cell_bet;
+                }
+                else
+                if (t_max_cell > max_cell_bet)
+                {
+                    int x_val = max_cell_bet - t_cell.cell_bet_value;
+                    calc_summ += x_val;
+                }
+            }
+        }
+
+        return calc_summ;
+    }
+
     public void SelectNeighbors()
     {
         if (!game_lock)
@@ -1103,16 +1234,18 @@ public class GameManager : MonoBehaviour {
                 {
                     id = last_cell.cell_close_id[0];
 
+                    //First pick two additions;
                     if (nSetId != id)
                     {
                         nSetId = id;
                         nSet = false;
-                        t_all_sum = cur_bet_value * 2;
+                        //t_all_sum = cur_bet_value * 2;
                     }
                     else
+                    //Second pick three additions;
                     {
                         nSet = true;
-                        t_all_sum = cur_bet_value * 3;
+                        //t_all_sum = cur_bet_value * 3;
                     }
 
                     int a = 0;
@@ -1134,6 +1267,7 @@ public class GameManager : MonoBehaviour {
                             {
                                 b = neigbors[i].n_index;
                                 sosedi.Add(b);
+                                t_all_sum += CalcNBet(t_data.cells_list[b]);
                             }
 
                             //back;
@@ -1141,11 +1275,13 @@ public class GameManager : MonoBehaviour {
                             {
                                 a = neigbors[i - 1].n_index;
                                 sosedi.Add(a);
+                                t_all_sum += CalcNBet(t_data.cells_list[a]);
                             }
                             else
                             {
                                 a = neigbors[36].n_index;
                                 sosedi.Add(a);
+                                t_all_sum += CalcNBet(t_data.cells_list[a]);
                             }
 
                             //forward;
@@ -1153,11 +1289,13 @@ public class GameManager : MonoBehaviour {
                             {
                                 c = neigbors[i + 1].n_index;
                                 sosedi.Add(c);
+                                t_all_sum += CalcNBet(t_data.cells_list[c]);
                             }
                             else
                             {
                                 c = neigbors[0].n_index;
                                 sosedi.Add(c);
+                                t_all_sum += CalcNBet(t_data.cells_list[c]);
                             }
                             break;
                         }
@@ -1165,6 +1303,7 @@ public class GameManager : MonoBehaviour {
 
                     ttb = CalcCurBet();
 
+                    //---------------------------------------;
                     if (t_all_sum > 0 && t_all_sum <= p_credit)
                     {
                         if ((ttb + t_all_sum) <= max_field_bet)
@@ -1176,12 +1315,32 @@ public class GameManager : MonoBehaviour {
 
                                 t_max_cell = n_cell.cell_bet_value + cur_bet_value;
 
-                                if (t_max_cell <= max_cell_bet)
+                                if (t_max_cell >= min_cell_bet && t_max_cell <= max_cell_bet)
                                 {
                                     n_cell.cell_bet_value += cur_bet_value;
                                     SetBasicChip(n_cell, cur_bet_value);
                                     p_credit -= cur_bet_value;
                                     p_balance -= cur_bet_value * p_denomination;
+                                }
+                                else
+                                {
+                                    if (t_max_cell <= min_cell_bet)
+                                    {
+                                        n_cell.cell_bet_value += min_cell_bet;
+                                        SetBasicChip(n_cell, min_cell_bet);
+                                        p_credit -= min_cell_bet;
+                                        p_balance -= min_cell_bet * p_denomination;
+                                    }
+                                    else
+                                    if (t_max_cell > max_cell_bet)
+                                    {
+                                        int x_val = max_cell_bet - n_cell.cell_bet_value;
+
+                                        n_cell.cell_bet_value += x_val;
+                                        SetBasicChip(n_cell, x_val);
+                                        p_credit -= x_val;
+                                        p_balance -= x_val * p_denomination;
+                                    }
                                 }
                             }
 
@@ -1203,18 +1362,18 @@ public class GameManager : MonoBehaviour {
                     {
                         //Show not enought credit;
                         //-----------------------------------;
-                        popupWindow.ShowPopup("<size=30>Не хватает кредитов</size>"
-                        + "\n<size=20>Вы ставите (<color=yellow>"
-                        + t_all_sum.ToString()
-                        + "</color>), доступный кредит (<color=yellow>"
-                        + p_credit.ToString()
-                        + "</color>);</size>"
-                        );
+                        //popupWindow.ShowPopup("<size=30>Не хватает кредитов</size>"
+                        //+ "\n<size=20>Вы ставите (<color=yellow>"
+                        //+ t_all_sum.ToString()
+                        //+ "</color>), доступный кредит (<color=yellow>"
+                        //+ p_credit.ToString()
+                        //+ "</color>);</size>"
+                        //);
                     }
                 }
                 else
                 {
-                    Debug.Log("Wrong selection");
+                    //Debug.Log("Wrong selection");
                 }
             }
         }

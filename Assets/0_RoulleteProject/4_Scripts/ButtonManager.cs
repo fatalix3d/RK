@@ -63,7 +63,7 @@ public class ButtonManager : MonoBehaviour {
     //====================================================;
     public void LockEvent()
     {
-        Debug.Log("Game Lock");
+        //Debug.Log("Game Lock");
         for (int i = 0; i < betChips.Count; i++)
         {
             betChips[i].LockButton();

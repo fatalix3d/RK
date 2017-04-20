@@ -53,7 +53,7 @@ public class KeyboardController : MonoBehaviour
             string portName = NetConnecter.instance.com_target;
             if (portName == "")
             {
-                Debug.Log("Error: Couldn't find serial port.");
+                //Debug.Log("Error: Couldn't find serial port.");
                 return false;
             }
             else
@@ -377,7 +377,6 @@ public class KeyboardController : MonoBehaviour
             UInt64 num = 0x00;
             num = ReaderProtocolDataUnit.NumberFromBytes(newBytes, 9);
             string numStr = num.ToString();
-
 
             if ((newBytes[8] & BIT_GL_STATUS_FIND_CARD) != 0)
             {

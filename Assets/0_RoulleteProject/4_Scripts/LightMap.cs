@@ -269,7 +269,7 @@ public class LightMap : MonoBehaviour {
         total_win_ = GameManager.instance.p_last_win;
         win_step_ = total_win_ / counter;
         GameManager.instance.p_last_win = 0;
-        Debug.Log("Total win : " + total_win_ + " / Total  chips : " + counter.ToString() + "/ Step : " + win_step_.ToString());
+        //Debug.Log("Total win : " + total_win_ + " / Total  chips : " + counter.ToString() + "/ Step : " + win_step_.ToString());
 
         //Create SEQUENCE;
         //-----------------------------------;

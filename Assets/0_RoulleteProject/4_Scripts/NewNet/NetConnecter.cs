@@ -706,7 +706,8 @@ public class NetConnecter : MonoBehaviour {
                                         GameManager.instance.GlobalUnlockEvent();
                                         json = JsonConvert.SerializeObject(new { NUM = id_.ToString(), CMD = newMessage.CMD.ToString(), ID = newMessage.ID.ToString() });
                                         SendResponce(json);
-                                        break;
+                                        Debug.Log(newMessage.CREDIT);
+                                    break;
 
                                     case 1:
                                         Debug.Log("Transaction in progress");
